@@ -6,13 +6,79 @@ output: html_notebook
 初始化数据和变量
 ```{r}
 source(file.path(substr(getwd(),1,22),"header.R"))
-
+symA="600519.SH"
+symB="000016.SH"
 
 ```
 
 
 ## 基本思路
+1. 分析好的曲线和不好的曲线的区别
+回撤的时候主要都是假突破，曲线在一个区间内震荡时间太久
+计算过去6个月，在某个区间段的时间长度，以此作为是否会震荡很久的指标。将数据分成等区间的，然后求标准差，标准差越大则越分散，越不太可能在一个区间震荡。这个指标目标看是基本有效的。
+
+```{r}
+load(paste0(mypath.data,"sym50中性策略回测结果.RData"))
+
+
+symA="601818.SH"
+x<-get(symA)
+idx.excess <- grep(paste0("excess", return.nDay, "D"), names(x))
+excessPlot(symA,symB,60)
+chart.CumReturns(get(paste0("R",symA)))
+
+fsd<-function(sym){
+  x<-get(sym)
+idx.excess <- grep(paste0("excess", return.nDay, "D"), names(x))
+
+  ss<-x[,idx.excess]
+  ss<-as.numeric(unlist(x["2015/"]))
+  qs<-quantile(ss,c(0.10,0.90),na.rm=T)
+  ss<-ss[!is.na(ss)]
+ee<-sd(unlist(table(cut(ss[ss>qs[1]&ss<qs[2]],100))))
+ee
+  
+}
+
+myfsd<-sapply(sym50,fsd)
+
+sort(myfsd,decreasing = T)
+
+```
+
+2. 优化曲线的进场和离场时点
+将SMA换成VMMA
+
+
+```{r}
+
+symA="601818.SH"
+x<-get(symA)
+idx.excess <- grep(paste0("excess", return.nDay, "D"), names(x))
+excessPlot(symA,symB,60)
+chart.CumReturns(get(paste0("R",symA)))
+
+ss<-x[,idx.excess]
+ss<-cbind(cbind(ss,EMA(ss,n=10,wilder = T)),
+          EMA(ss,n=30,wilder = T),
+          SMA(ss,10),
+          SMA(ss,30))
+plot(ss,legend.loc=T)
+
+```
+
+
 1. 按相关性、距离
+
+```{r}
+symA="600028.SH"
+x<-get(symA)
+idx.excess <- grep(paste0("excess", return.nDay, "D"), names(x))
+x<-x["2005/"]
+acf(x[,idx.excess],lag.max=100,na.action = na.pass)
+
+```
+
 
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.

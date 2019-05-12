@@ -14,7 +14,7 @@ AexcessB <-
            return.nDay,
            SMA1.nDay = return.nDay/2,
            SMA2.nDay=return.nDay,
-           startDate,
+           ifEMA=T,
            only.last = T) {
     
     if (length(symB) > 1) {
@@ -31,11 +31,11 @@ AexcessB <-
     
     alignSymbols(c(symA, symB))
     
-    for (sym in c(symA, symB)) {
-      temp <- get(sym)
-      assign(sym, temp[paste0(startDate, "/"), ], envir = .GlobalEnv)
-      
-    }
+    # for (sym in c(symA, symB)) {
+    #   temp <- get(sym)
+    #   assign(sym, temp[paste0(startDate, "/"), ], envir = .GlobalEnv)
+    #   
+    # }
     
 
     
@@ -83,28 +83,59 @@ AexcessB <-
           label = paste0("excess", i, "D")
         )
         
-        applyInd(
-          sy,
-          fun.name = "SMAX",
-          arguments = list(
-            x = get(sy),
-            column = paste0("excess", i, "D"),
-            nDay = SMA1.nDay
-          ),
-          label = paste0("excess.SMA1", i, "D")
-        )
+        if(ifEMA){
         
+          applyInd(
+            sy,
+            fun.name = "EMAX",
+            arguments = list(
+              x = get(sy),
+              column = paste0("excess", i, "D"),
+              nDay = SMA1.nDay
+            ),
+            label = paste0("excess.SMA1", i, "D")
+          )
+          
+          
+          applyInd(
+            sy,
+            fun.name = "EMAX",
+            arguments = list(
+              x = get(sy),
+              column = paste0("excess", i, "D"),
+              nDay = SMA2.nDay
+            ),
+            label = paste0("excess.SMA2", i, "D")
+          )
+            
+        }else{
         
-        applyInd(
-          sy,
-          fun.name = "SMAX",
-          arguments = list(
-            x = get(sy),
-            column = paste0("excess", i, "D"),
-            nDay = SMA2.nDay
-          ),
-          label = paste0("excess.SMA2", i, "D")
-        )
+          applyInd(
+            sy,
+            fun.name = "SMAX",
+            arguments = list(
+              x = get(sy),
+              column = paste0("excess", i, "D"),
+              nDay = SMA1.nDay
+            ),
+            label = paste0("excess.SMA1", i, "D")
+          )
+          
+          
+          applyInd(
+            sy,
+            fun.name = "SMAX",
+            arguments = list(
+              x = get(sy),
+              column = paste0("excess", i, "D"),
+              nDay = SMA2.nDay
+            ),
+            label = paste0("excess.SMA2", i, "D")
+          )
+          
+            
+        }
+        
         
       }
       
@@ -143,8 +174,4 @@ AexcessB <-
   }
 
 
-PairDist<-function(x,column,method="euclidean"){
-  
-  
-}
 

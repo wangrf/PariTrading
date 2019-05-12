@@ -1,5 +1,5 @@
 
-strategy.ReturnRevert<-function(sym1,sym2,r.nDay,sma1.nDay,sma2.nDay){
+strategy.ReturnRevert<-function(sym1,sym2,r.nDay,sma1.nDay,sma2.nDay,ifEMA=T){
   
   strategy.name=paste0(sym1," Vs ",sym2)
 
