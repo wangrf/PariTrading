@@ -13,6 +13,8 @@ sym.ben = "000016.SH"
 loadRData("000016.SH")
 
 return.nDay = 60
+SMA1.nDay=10
+peakValley.thresh=20
 
 bindData <- function(x, column) {
   idx <- match.names(column, names(x))
@@ -66,7 +68,8 @@ applyInd(
 
 for (sym in sym50) {
   loadRData(sym)
-  applyInd(
+
+    applyInd(
     sym,
     fun.name = "Return.calculateX",
     arguments = list(x = get(sym), column = "close"),
@@ -109,6 +112,40 @@ for (sym in sym50) {
   )
   
   
+  applyInd(
+    sym,
+    fun.name = "EMAX",
+    arguments = list(
+      x = get(sym),
+      column = paste0("excess", return.nDay, "D"),
+      nDay = SMA1.nDay
+    ),
+    label = paste0("excess.SMA1", SMA1.nDay, "D")
+  )
+  
+  applyInd(
+    sym,
+    fun.name = "peakValleyX",
+    arguments = list(
+      x = get(sym),
+      column = paste0("excess.SMA1", SMA1.nDay, "D"),
+      thresh=peakValley.thresh
+    ),
+    label = paste0("peakValley", peakValley.thresh, "D")
+  )
+  
+  applyInd(
+    sym,
+    fun.name = "apply.fromstartX",
+    arguments = list(
+      x = get(sym),
+      column = paste0("peakValley", peakValley.thresh, "D"),
+      FUN = "PVcount"
+    ),
+    label = paste0("PVcount")
+  )
+  
+  
 }
 
 
@@ -117,14 +154,15 @@ excessData <-
   merge_ind(symbols = sym50,
             ind = paste0("excess", return.nDay, "D"))
 
+row.idx<-sapply(sym50,function(symA) ifelse(is.infinite(max(which(get(symA)[,4]==0))),0,max(which(get(symA)[,4]==0)))+1)
 
-excessData<-excessData["2010/"]
-
-
-row.idx<- ifelse(is.infinite(max(which(get(symA)[,4]==0))),0,max(which(get(symA)[,4]==0)))
+excessData<-excessData[,which(row.idx<2500)]
+excessData<-excessData["2010-07/"]
 
 
 excessEMA<-apply(excessData,2,function(x) EMA(x,10,wilder = T))
 
-excessPeak<-apply(excessEMA,2,findPeaks,thresh=20)
-excessValley<-apply(excessEMA,2,findValleys,thresh=20)
+
+
+excessPeak<-apply(excessEMA[-(1:10),],2,findPeaks,thresh=20)
+excessValley<-apply(excessEMA[-(1:10),],2,findValleys,thresh=20)
