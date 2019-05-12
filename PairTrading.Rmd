@@ -47,8 +47,8 @@ sort(myfsd,decreasing = T)
 ```
 
 2. 优化曲线的进场和离场时点
-将SMA换成VMMA
-
+将SMA换成VMMA，VMMA还没有思路做，用EMA代替
+EMA有时是更好，如用在茅台上，但有时不行，如用在工行上
 
 ```{r}
 
@@ -65,8 +65,19 @@ ss<-cbind(cbind(ss,EMA(ss,n=10,wilder = T)),
           SMA(ss,30))
 plot(ss,legend.loc=T)
 
+##把回测换成EMA，看看回撤结果
+symA="601818.SH"
+symB="000016.SH"
+strategy.ReturnRevert(symA,symB,r.nDay = 60,sma1.nDay = 10,sma2.nDay = 30,ifEMA = F)
+
 ```
 
+
+3. 考虑计算excess数据，使用EMA曲线的波峰波谷的数量来作为判断好的曲线和不好的曲线
+```{r}
+source("./R/RelativeValueStgy.R")
+
+```
 
 1. 按相关性、距离
 

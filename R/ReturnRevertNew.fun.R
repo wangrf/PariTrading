@@ -3,8 +3,11 @@ strategy.ReturnRevert<-function(sym1,sym2,r.nDay,sma1.nDay,sma2.nDay,ifEMA=T){
   
   strategy.name=paste0(sym1," Vs ",sym2)
 
-  source(file.path(substr(getwd(),1,22),"header.R"))
-  source("AexcessB.R")
+  
+  suppressWarnings(rm(list=c(paste0("account.",strategy.name),paste0("portfolio.",strategy.name)),pos=.blotter))
+  suppressWarnings(rm(list=c("ltaccount", "ltportfolio", "ClosePrice", "CurrentDate", "equity", 
+                      "GSPC", paste0("strat.",strategy.name), "startDate", "initEq", "Posn", "UnitSize", "verbose")))
+  suppressWarnings(rm(list=c(paste0("order_book.",strategy.name)),pos=.strategy))
   
   #correct for TZ issues if they crop up
   oldtz<-Sys.getenv('UTC')
@@ -50,7 +53,7 @@ strategy.ReturnRevert<-function(sym1,sym2,r.nDay,sma1.nDay,sma2.nDay,ifEMA=T){
     return.nDay = return.nDay,
     SMA1.nDay = SMA1.nDay,
     SMA2.nDay=SMA2.nDay,
-    startDate = "2005",
+    ifEMA=ifEMA,
     only.last = T
   )
   

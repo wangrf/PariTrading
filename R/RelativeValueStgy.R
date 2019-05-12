@@ -108,34 +108,23 @@ for (sym in sym50) {
     label = paste0("excess", return.nDay, "D")
   )
   
-
-  
-  #
-  # applyInd(
-  #
-  #   sym,
-  #   fun.name="rollapplyX",
-  #   arguments=list(
-  #
-  #     x=get(sym),
-  #     column=c(paste0("cumReturn", return.nDay, "D"),"cumReturn.ben"),
-  #     width=500,
-  #     FUN="dtwDistX"
-  #   ),
-  #   label="DTW.dist"
-  #
-  # )
-  
-  
-  
   
 }
 
 
 
-
-
-
-cumReturn <-
+excessData <-
   merge_ind(symbols = sym50,
-            ind = paste0("cumReturn", return.nDay, "D"))
+            ind = paste0("excess", return.nDay, "D"))
+
+
+excessData<-excessData["2010/"]
+
+
+row.idx<- ifelse(is.infinite(max(which(get(symA)[,4]==0))),0,max(which(get(symA)[,4]==0)))
+
+
+excessEMA<-apply(excessData,2,function(x) EMA(x,10,wilder = T))
+
+excessPeak<-apply(excessEMA,2,findPeaks,thresh=20)
+excessValley<-apply(excessEMA,2,findValleys,thresh=20)
