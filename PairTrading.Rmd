@@ -66,9 +66,9 @@ ss<-cbind(cbind(ss,EMA(ss,n=10,wilder = T)),
 plot(ss,legend.loc=T)
 
 ##把回测换成EMA，看看回撤结果
-symA="601818.SH"
+symA="600519.SH"
 symB="000016.SH"
-strategy.ReturnRevert(symA,symB,r.nDay = 60,sma1.nDay = 10,sma2.nDay = 30,ifEMA = F)
+strategy.ReturnRevert(symA,symB,r.nDay = 60,sma1.nDay = 10,sma2.nDay = 30,ifEMA = T)
 
 ```
 

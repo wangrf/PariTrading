@@ -5,14 +5,14 @@ nSym<-length(syms)
 mat<-matrix(0,nrow=nSym,ncol=nSym)
 
 source(file.path(substr(getwd(),1,22),"header.R"))
-source("AexcessB.R")
+
 
 #correct for TZ issues if they crop up
 oldtz<-Sys.getenv('UTC')
 if(oldtz=='') {
   Sys.setenv(TZ="UTC")
 }
-r.nDay=10
+r.nDay=60
 
 
 for(i in 1:(nSym-1)){
@@ -21,7 +21,7 @@ for(i in 1:(nSym-1)){
     symA<-syms[i]
     symB<-syms[j]
   print(c(symA,symB)  )
-    AexcessB(symA,symB,return.nDay=r.nDay,SMA1.nDay = round(r.nDay/2,0),SMA2.nDay = r.nDay,startDate="2010",only.last=T)
+    AexcessB(symA,symB,return.nDay=r.nDay,SMA1.nDay = round(r.nDay/2,0),SMA2.nDay = r.nDay,only.last=T)
     applyInd(sym=symA,fun.name="rollapplyX",
              arguments=list(x=get(symA),column=paste0("excess",r.nDay,"D"),width=500,FUN="last.percentile"),
              label="percent")
@@ -93,14 +93,14 @@ loadRData(sym)
   )
   
   applyInd(sym=sym,fun.name="rollapplyX",
-           arguments=list(x=get(sym),column="dailyReturn",width=20,FUN="Return.cumulative",partial=F),
-           label=paste0("cum","Return",20))
+           arguments=list(x=get(sym),column="dailyReturn",width=5,FUN="Return.cumulative",partial=F),
+           label=paste0("cum","Return",5))
   
   
   
   applyInd(sym=sym,fun.name="leadX",
-           arguments=list(x=get(sym),column=paste0("cum","Return",20),k=20),
-           label=paste0("RleadCum",20))
+           arguments=list(x=get(sym),column=paste0("cum","Return",5),k=5),
+           label=paste0("RleadCum",5))
 }
 
 
@@ -109,7 +109,7 @@ ret<-cbind(get(syms[1])[,ncol(get(syms[1]))],
       get(syms[3])[,ncol(get(syms[3]))],
       get(syms[4])[,ncol(get(syms[4]))])
 
-tt<-index(ret)[Tcalendar(ret,daysInter="monfirst")==1]
+tt<-index(ret)[Tcalendar(ret,daysInter="weekfirst")==1]
 
 out<-out[tt,]
 out<-out["2013/"]
@@ -117,6 +117,6 @@ ret<-ret[index(out),]
 
 R.stgy<-xts(diag(ret%*%t(out)),order.by=index(ret))
 RR<-cbind(R.stgy,ret)
-charts.PerformanceSummary(RR, geometric=FALSE, wealth.index=TRUE,main = "反转净值曲线")
-table.AnnualizedReturns(R = RR)
+charts.PerformanceSummary(RR["2014/"], geometric=FALSE, wealth.index=TRUE,main = "反转净值曲线")
+table.AnnualizedReturns(R = RR["2014/"])
 

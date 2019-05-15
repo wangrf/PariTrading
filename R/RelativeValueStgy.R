@@ -12,9 +12,69 @@ loadRData("sym50")
 sym.ben = "000016.SH"
 loadRData("000016.SH")
 
+sym50<-sym50[-c(24,28,29,34,33,42,49,50)]
+
+#sym50="600519.SH"
+
 return.nDay = 60
-SMA1.nDay=10
+SMA1.nDay=20
 peakValley.thresh=20
+
+load("./data/sym50中性策略回测结果.RData")
+
+LSfun<-function(x){
+  
+  idx1<-match.names("longBuy",names(x))
+  idx2<-match.names("longSell",names(x))
+  
+  y<-ifelse(x[,idx1]==1|x[,idx2]==1,1,0)
+  
+  a1<-which(y==1)
+  
+  if(length(a1)%%2==0){
+    b1=a1[seq(1,length(a1),2)]
+    b2=a1[seq(2,length(a1),2)]
+  }else{
+    b1=a1[seq(1,length(a1)-1,2)]
+    b2=a1[seq(2,length(a1),2)]
+  }
+  
+  z<-rep(0,nrow(x))
+  
+  myone<-function(up,down){
+    up:down
+  }
+  
+  zz<-mapply(myone,b1,b2)
+  
+  for(i in 1:length(zz)){
+    
+    z[zz[[i]]]<-i
+    
+  }
+
+  z<-xts(z,order.by=index(x))
+  names(z)<-"LS"
+  z
+  
+}
+
+for(sym in sym50){
+  
+  applyInd(
+    sym,
+    fun.name="LSfun",
+    arguments = list(
+      x=get(sym)
+    ),
+    label="LSsig"
+  )
+  
+}
+
+LSdata<-merge_ind(symbols = sym50,ind = "LSsig")
+
+
 
 bindData <- function(x, column) {
   idx <- match.names(column, names(x))
@@ -68,6 +128,7 @@ applyInd(
 
 for (sym in sym50) {
   loadRData(sym)
+  alignSymbols(c(sym,sym.ben))
 
     applyInd(
     sym,
@@ -134,25 +195,30 @@ for (sym in sym50) {
     label = paste0("peakValley", peakValley.thresh, "D")
   )
   
+  
   applyInd(
     sym,
     fun.name = "apply.fromstartX",
     arguments = list(
       x = get(sym),
-      column = paste0("peakValley", peakValley.thresh, "D"),
+      column = "peakValley",
       FUN = "PVcount"
     ),
-    label = paste0("PVcount")
+    label = paste0("PVratio")
   )
-  
   
 }
 
 
-
-excessData <-
+PVdata <-
   merge_ind(symbols = sym50,
-            ind = paste0("excess", return.nDay, "D"))
+            ind = paste0("PVnum"))
+
+PVrank<-applyRank(x = PVdata,rankFun = rowRank,descreasing=F)
+
+
+
+
 
 row.idx<-sapply(sym50,function(symA) ifelse(is.infinite(max(which(get(symA)[,4]==0))),0,max(which(get(symA)[,4]==0)))+1)
 
