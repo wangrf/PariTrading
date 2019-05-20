@@ -67,8 +67,11 @@ plot(ss,legend.loc=T)
 
 ##把回测换成EMA，看看回撤结果
 symA="600519.SH"
+for(symA in sym50){
 symB="000016.SH"
 strategy.ReturnRevert(symA,symB,r.nDay = 60,sma1.nDay = 10,sma2.nDay = 30,ifEMA = T)
+  
+}
 
 ```
 

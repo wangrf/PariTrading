@@ -63,7 +63,7 @@ num=5
 RS<-RR[substr(rownames(anR)[1:num],1,9)]
 print(secName[match(substr(rownames(anR)[1:num],1,9),secName$code),])
 RS<-do.call(merge,RS)
-RS<-RS['2011/']
+RS<-RS['2012/']
 RS[is.na(RS)]<-0
 W= xts(matrix(1/num,nrow=nrow(RS),ncol=num),order.by=index(RS))
 RP<-xts(diag(RS%*%t(W)),order.by=index(RS))

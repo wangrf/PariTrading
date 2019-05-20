@@ -10,9 +10,10 @@ source(file.path(substr(getwd(), 1, 22), "header.R"))
 
 loadRData("sym50")
 sym.ben = "000016.SH"
-loadRData("000016.SH")
 
 sym50<-sym50[-c(24,28,29,34,33,42,49,50)]
+
+
 
 #sym50="600519.SH"
 
@@ -59,6 +60,30 @@ LSfun<-function(x){
   
 }
 
+LSdatefun<-function(x){
+  
+  LL<-x[,match.names("LS",names(x))]
+  
+  ## 距离当期日期最近的进入时点
+  L<-diff(LL)
+  
+  id<-c(1,which(L!=0))
+  
+  xx<-findInterval(1:length(L),id,rightmost.closed = T)
+  
+  xx<-xx*as.numeric(LL!=0)
+  
+  idx<-which(xx!=0)
+  
+  zz<-rep(as.Date("9999-12-31","%Y-%m-%d"),length(LL))
+  
+  zz[idx]<-index(LL)[id[xx[idx]]]
+  names(zz)<-"LSdate"
+  xts(zz,order.by=index(LL))
+  
+  
+}
+
 for(sym in sym50){
   
   applyInd(
@@ -69,12 +94,24 @@ for(sym in sym50){
     ),
     label="LSsig"
   )
+  applyInd(
+    sym,
+    fun.name="LSdatefun",
+    arguments = list(
+      x=get(sym)
+    ),
+    label="LSdate"
+  )
+  
   
 }
 
-LSdata<-merge_ind(symbols = sym50,ind = "LSsig")
+LSdata<-merge_ind(symbols = sym50,ind = "LSdate")
 
+LSdata.rank<-applyRank(x = LSdata,rankFun = rowRank,descreasing=F)
+LSdata.rank<-LSdata.rank<=5
 
+LSsig<-merge_ind(symbols=sym50,ind="LSsig")
 
 bindData <- function(x, column) {
   idx <- match.names(column, names(x))
@@ -105,6 +142,7 @@ dtwDistX <- function(x) {
   )  ==  "try-error", NA, dtwDist(xx)[1, 2])
   
 }
+loadRData("000016.SH")
 
 applyInd(
   sym.ben,
@@ -198,10 +236,11 @@ for (sym in sym50) {
   
   applyInd(
     sym,
-    fun.name = "apply.fromstartX",
+    fun.name = "rollapplyX",
     arguments = list(
       x = get(sym),
       column = "peakValley",
+      width=500,
       FUN = "PVcount"
     ),
     label = paste0("PVratio")
@@ -212,23 +251,106 @@ for (sym in sym50) {
 
 PVdata <-
   merge_ind(symbols = sym50,
-            ind = paste0("PVnum"))
+            ind = paste0("PVratio"))
 
 PVrank<-applyRank(x = PVdata,rankFun = rowRank,descreasing=F)
 
+PVrank<-PVrank<=5
+
+PVrank<-PVrank[index(LSdata)]
+
+
+xx<-vector(mode = "list",length=ncol(LSdata))
+
+for(i in 1:ncol(LSdata)){
+
+  
+  x<-LSsig[,i]
+  y<-PVrank[,i]
+  f<-LSdata.rank[,i]
+  
+z<-  unique(x[which((y==1)&(f==1))])
+ 
+ xx[[i]]<-z
+}
+names(xx)<-names(PVdata)
+
+
+LS<-xts(matrix(0,nrow(LSdata),ncol(LSdata)),order.by=index(LSdata))
+
+for(i in 1:ncol(LSdata)){
+  
+  if(length(xx[i])!=0){
+    id<-xx[[i]]
+    idx<-which(id==0)
+    if(length(idx!=0)){
+      id<-id[-idx]
+      
+    }
+    
+    LS[ which(LSsig[,i]%in%id),i]<-1
+    
+  }
+  
+}
 
 
 
 
-row.idx<-sapply(sym50,function(symA) ifelse(is.infinite(max(which(get(symA)[,4]==0))),0,max(which(get(symA)[,4]==0)))+1)
-
-excessData<-excessData[,which(row.idx<2500)]
-excessData<-excessData["2010-07/"]
-
-
-excessEMA<-apply(excessData,2,function(x) EMA(x,10,wilder = T))
 
 
 
-excessPeak<-apply(excessEMA[-(1:10),],2,findPeaks,thresh=20)
-excessValley<-apply(excessEMA[-(1:10),],2,findValleys,thresh=20)
+RE<-xts(matrix(NA,nrow(LSdata),ncol(LSdata)),order.by=index(LSdata))
+dd<-index(RE)
+
+for(i in 1:ncol(LS)){
+  
+  newR<-get(paste0("R",sym50[i]))
+  idx<-which(LS[,i]==1)
+  
+  RE[idx,i]<-as.numeric(newR[dd[which(LS[,i]==1)]])
+  
+}
+
+
+
+RE<-RE/5
+ratio<-apply(!is.na(RE),1,sum)/5
+sumRE<-apply(RE,1,sum,na.rm=T)
+
+sumHB<-xts(0.035/365*(1-ratio),order.by=index(sumRE))
+
+sumRE<-sumRE+sumHB
+
+sumRE<-xts(sumRE,order.by=index(RE))
+names(sumRE)<-"return"
+
+charts.PerformanceSummary(sumRE)
+table.AnnualizedReturns(sumRE)
+maxDrawdown(sumRE)
+table.Monthly(sumRE)
+
+
+meanRE<-apply(RE,1,mean,na.rm=T)
+meanRE[is.na(meanRE)]<-0.035/365
+meanRE[ is.infinite(meanRE)]<-0.035/365
+meanRE<-xts(meanRE,order.by=index(RE))
+names(meanRE)<-"return"
+
+
+
+meanRE<-meanRE["2008/"]
+
+table.AnnualizedReturns(meanRE)
+maxDrawdown(meanRE)
+table.Monthly(meanRE)
+charts.PerformanceSummary(meanRE,wealth.index = T)
+
+sym="600196.SH"
+charts.PerformanceSummary(get(paste0("R",sym)),wealth.index = T)
+excessPlot(sym)
+
+
+
+
+
