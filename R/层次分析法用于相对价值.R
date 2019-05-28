@@ -7,6 +7,7 @@ mat<-matrix(0,nrow=nSym,ncol=nSym)
 source(file.path(substr(getwd(),1,22),"header.R"))
 
 
+
 #correct for TZ issues if they crop up
 oldtz<-Sys.getenv('UTC')
 if(oldtz=='') {
@@ -82,41 +83,47 @@ names(out)<-syms
 plot(out,legend.loc="topleft")
 
 
-for(sym in syms){
-  
-loadRData(sym)  
-  applyInd(
-    sym,
-    fun.name = "Return.calculateX",
-    arguments = list(x = get(sym), column = "close"),
-    label = "dailyReturn"
-  )
-  
-  applyInd(sym=sym,fun.name="rollapplyX",
-           arguments=list(x=get(sym),column="dailyReturn",width=5,FUN="Return.cumulative",partial=F),
-           label=paste0("cum","Return",5))
-  
-  
-  
-  applyInd(sym=sym,fun.name="leadX",
-           arguments=list(x=get(sym),column=paste0("cum","Return",5),k=5),
-           label=paste0("RleadCum",5))
-}
 
 
-ret<-cbind(get(syms[1])[,ncol(get(syms[1]))],
-      get(syms[2])[,ncol(get(syms[2]))],
-      get(syms[3])[,ncol(get(syms[3]))],
-      get(syms[4])[,ncol(get(syms[4]))])
 
-tt<-index(ret)[Tcalendar(ret,daysInter="weekfirst")==1]
 
-out<-out[tt,]
-out<-out["2013/"]
-ret<-ret[index(out),]
 
-R.stgy<-xts(diag(ret%*%t(out)),order.by=index(ret))
-RR<-cbind(R.stgy,ret)
-charts.PerformanceSummary(RR["2014/"], geometric=FALSE, wealth.index=TRUE,main = "反转净值曲线")
-table.AnnualizedReturns(R = RR["2014/"])
+# 
+# for(sym in syms){
+#   
+# loadRData(sym)  
+#   applyInd(
+#     sym,
+#     fun.name = "Return.calculateX",
+#     arguments = list(x = get(sym), column = "close"),
+#     label = "dailyReturn"
+#   )
+#   
+#   applyInd(sym=sym,fun.name="rollapplyX",
+#            arguments=list(x=get(sym),column="dailyReturn",width=5,FUN="Return.cumulative",partial=F),
+#            label=paste0("cum","Return",5))
+#   
+#   
+#   
+#   applyInd(sym=sym,fun.name="leadX",
+#            arguments=list(x=get(sym),column=paste0("cum","Return",5),k=5),
+#            label=paste0("RleadCum",5))
+# }
+# 
+# 
+# ret<-cbind(get(syms[1])[,ncol(get(syms[1]))],
+#       get(syms[2])[,ncol(get(syms[2]))],
+#       get(syms[3])[,ncol(get(syms[3]))],
+#       get(syms[4])[,ncol(get(syms[4]))])
+# 
+# tt<-index(ret)[Tcalendar(ret,daysInter="weekfirst")==1]
+# 
+# out<-out[tt,]
+# out<-out["2013/"]
+# ret<-ret[index(out),]
+# 
+# R.stgy<-xts(diag(ret%*%t(out)),order.by=index(ret))
+# RR<-cbind(R.stgy,ret)
+# charts.PerformanceSummary(RR["2014/"], geometric=FALSE, wealth.index=TRUE,main = "反转净值曲线")
+# table.AnnualizedReturns(R = RR["2014/"])
 

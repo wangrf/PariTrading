@@ -1,6 +1,8 @@
 ---
 title: "配对交易研究"
 output: html_notebook
+editor_options: 
+  chunk_output_type: console
 ---
 
 初始化数据和变量
@@ -81,6 +83,20 @@ strategy.ReturnRevert(symA,symB,r.nDay = 60,sma1.nDay = 10,sma2.nDay = 30,ifEMA 
 source("./R/RelativeValueStgy.R")
 
 ```
+实践证明这种方式并不是很好，结果不太好，净值曲线不太理想。
+使用移动累计收益率本身就是一个慢变量，再叠加均线交叉策略更慢，因此回撤更大。
+
+阅读文献，一般都是使用价格的均值回复来进行套利的，用收益率的比较少
+
+4. 收益来源
+
+实际上，这个并不是配对交易，而是Alpha套利。
+其收益来源是有二，一是选股，所选股票本身具有超额收益，因此做市场Beta对冲使得其看上去像套利。如果选股不当，则效果并不好。这也就是我这个策略无法推广，仍然只停留在回测阶段。
+二是择时，择时是通过相对收益这个价值指标进行择时的，也就是价值择时。
+
+
+
+
 
 1. 按相关性、距离
 
@@ -93,7 +109,7 @@ acf(x[,idx.excess],lag.max=100,na.action = na.pass)
 
 ```
 
-
+  
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
