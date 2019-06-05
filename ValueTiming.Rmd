@@ -1,0 +1,140 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+source("./R/层次分析法用于相对价值.R")
+
+myweight<-out["2012-7/"]
+
+```
+1. kmeans聚类
+```{r}
+k.clusters<-kmeans(myweight,5)
+k.centers<-k.clusters$centers
+k.centers[order(k.centers[,1]),]
+
+
+```
+无法区分50和创业板，因此不适用
+
+2. 高斯聚类
+```{r}
+mod1<-Mclust(myweight)
+summary(mod1)
+plot(mod1,what=c("BIC","classification"))
+
+```
+
+
+3. 根据相对收益及其动量确定权重
+
+```{r}
+rm(list=ls())
+source(file.path(substr(getwd(), 1, 22), "header.R"))
+symA <- "000016.SH"
+symB <- "399006.SZ"
+r.nDay = 60
+excessPlot(symA, symB, return.nDay = r.nDay)
+
+
+applyInd(
+  symA,
+  fun.name = "leadX",
+  arguments = list(
+    x = get(symA),
+    column = paste0("excess", r.nDay, "D"),
+    k = 20
+  ),
+  label = paste0("leadcumR", 20, "D")
+)
+
+applyInd(
+  symA,
+  fun.name = "lagX",
+  arguments = list(
+    x = get(symA),
+    column = paste0("excess", r.nDay, "D"),
+    k = 20
+  ),
+  label = paste0("lagcumR", 20, "D")
+)
+
+
+applyInd(
+  symA,
+  fun.name = "minusX",
+  arguments = list(
+    x = get(symA),
+    column1=paste0("leadcumR", 20, "D"),
+    column2 = paste0("excess", r.nDay, "D")
+  ),
+  label = paste0("profit")
+)
+
+
+applyInd(
+  sym = symA,
+  fun.name = "apply.fromstartX",
+  arguments = list(
+    x = get(symA),
+    column = paste0("excess", r.nDay, "D"),
+    FUN = "last.percentile"
+  ),
+  label = "percent"
+)
+
+# applyInd(
+#   sym = symA,
+#   fun.name = "rollapplyX",
+#   arguments = list(
+#   x = get(symA),
+#   column = paste0("excess", r.nDay, "D"),
+#   width = 40,
+#   FUN = "last.percentile"
+#   ),
+#   label = "momentum"
+#   )
+
+applyInd(
+  symA,
+  fun.name = "minusX",
+  arguments = list(
+    x = get(symA),
+    column2=paste0("lagcumR", 20, "D"),
+    column1 = paste0("excess", r.nDay, "D")
+  ),
+  label = paste0("momentum")
+)
+
+
+
+
+
+idname<-c("percent","momentum","profit")
+idx<-match.names(idname,names(get(symA)))
+xx<-get(symA)[,idx]
+xx<-xx["2010/"]
+xx<-as.data.frame(xx)
+names(xx)<-idname
+
+xx<-xx[!is.na(xx[,3]),]
+
+
+ss<-xx%>%mutate(per.cut=cut(percent,seq(0,1,length.out = 6)),mom.cut=ifelse(momentum>0,1,-1))%>%group_by(mom.cut,per.cut)%>%
+  summarise(mn=mean(profit),md=median(profit),num=n(),q1=quantile(profit,0.1),q2=quantile(profit,0.2),
+            )
+ss
+tail(get(symA),40)
+
+write.csv(ss,file="ss.csv")
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
