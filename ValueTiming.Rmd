@@ -37,6 +37,8 @@ source(file.path(substr(getwd(), 1, 22), "header.R"))
 symA <- "000016.SH"
 symB <- "399006.SZ"
 r.nDay = 60
+profit.day=20
+window=500
 excessPlot(symA, symB, return.nDay = r.nDay)
 
 
@@ -46,9 +48,9 @@ applyInd(
   arguments = list(
     x = get(symA),
     column = paste0("excess", r.nDay, "D"),
-    k = 20
+    k = profit.day
   ),
-  label = paste0("leadcumR", 20, "D")
+  label = paste0("leadcumR", profit.day, "D")
 )
 
 applyInd(
@@ -57,9 +59,9 @@ applyInd(
   arguments = list(
     x = get(symA),
     column = paste0("excess", r.nDay, "D"),
-    k = 20
+    k = profit.day
   ),
-  label = paste0("lagcumR", 20, "D")
+  label = paste0("lagcumR", profit.day, "D")
 )
 
 
@@ -68,13 +70,29 @@ applyInd(
   fun.name = "minusX",
   arguments = list(
     x = get(symA),
-    column1=paste0("leadcumR", 20, "D"),
+    column1=paste0("leadcumR", profit.day, "D"),
     column2 = paste0("excess", r.nDay, "D")
   ),
   label = paste0("profit")
 )
 
+if(window>0){
 
+  applyInd(
+  sym = symA,
+  fun.name = "rollapplyX",
+  arguments = list(
+    x = get(symA),
+    column = paste0("excess", r.nDay, "D"),
+    FUN = "last.percentile",
+    width=window
+  ),
+  label = "percent"
+)
+
+    
+}else{
+  
 applyInd(
   sym = symA,
   fun.name = "apply.fromstartX",
@@ -85,6 +103,12 @@ applyInd(
   ),
   label = "percent"
 )
+  
+  
+}
+
+
+
 
 # applyInd(
 #   sym = symA,
@@ -98,17 +122,39 @@ applyInd(
 #   label = "momentum"
 #   )
 
+
+PVtemp.fun<-function(x,column,thresh){
+  
+  x<-peakValleyY(x,column,thresh)
+  id.p<-which(x==1)
+  id.v<-which(x==-1)
+  
+  
+  y<-cumsum(x)
+  
+  
+  if(which(!is.na(id.p))[1]>which(!is.na(id.v))[1]){
+    
+      z<-ifelse(y==0,1,-1)
+    
+  }else{
+    z<-ifelse(y==0,-1,1)
+  }
+  names(z)<-"momentum"
+  z
+}
+
 applyInd(
   symA,
-  fun.name = "minusX",
+  fun.name = "PVtemp.fun",
   arguments = list(
     x = get(symA),
-    column2=paste0("lagcumR", 20, "D"),
-    column1 = paste0("excess", r.nDay, "D")
+    column = paste0("excess", r.nDay, "D"),
+    thresh=60
+    
   ),
   label = paste0("momentum")
 )
-
 
 
 
@@ -120,14 +166,56 @@ xx<-xx["2010/"]
 xx<-as.data.frame(xx)
 names(xx)<-idname
 
-xx<-xx[!is.na(xx[,3]),]
+xx<-xx[complete.cases(xx),]
 
+yy<-xx%>%mutate(per.cut=cut(percent,seq(0,1,length.out = 6)),mom.cut=ifelse(momentum>0,1,-1))
+
+ggplot(yy,aes(profit))+facet_grid(per.cut~mom.cut)+geom_histogram(bins=100)
 
 ss<-xx%>%mutate(per.cut=cut(percent,seq(0,1,length.out = 6)),mom.cut=ifelse(momentum>0,1,-1))%>%group_by(mom.cut,per.cut)%>%
-  summarise(mn=mean(profit),md=median(profit),num=n(),q1=quantile(profit,0.1),q2=quantile(profit,0.2),
-            )
+  summarise(q1=quantile(profit,0.1),q2=quantile(profit,0.2),
+            q3=quantile(profit,0.3),
+            q4=quantile(profit,0.4),
+            q5=quantile(profit,0.5),
+            q6=quantile(profit,0.6),
+            q7=quantile(profit,0.7),
+            q8=quantile(profit,0.8),
+            q9=quantile(profit,0.9),
+            qX=quantile(profit,1),num=n())
+
 ss
-tail(get(symA),40)
+a1<-as.data.frame(sapply(ss[,-c(1,2)],rank))
+a3=rowMeans(a1)
+a0<-as.data.frame(ss[,c(1,2)])
+cbind(a0,a1,a3)
+
+profit<-as.vector(xx[,3])
+type<-paste0(yy[,4],"-",yy[,5])
+typeid<-unique(type)
+
+gen.f<-function(w){
+  
+  n<-length(w)
+  
+  mylist<-vector(mode = "list",length = n)
+  for(i in 1:n){
+    
+    
+    mylist[[i]]<-w[i]*profit[which(type==typeid[i])]
+    
+  }
+  ff<-unlist(mylist)
+  
+  fval<- -mean(ff)/sd(ff)
+  return(fval)
+  
+  
+}
+
+startW<-rep(0,10)
+ans<-optimx(startW,fn=gen.f,lower=rep(0,10),upper=rep(1,10),method="BFGS")
+
+
 
 write.csv(ss,file="ss.csv")
 ```
